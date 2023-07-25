@@ -111,6 +111,7 @@ where
 ///
 // This function exists to provide a reusable baseline implementation for
 // implementing [`Runtime::load_module`], so custom logic can be added on top.
+#[tracing::instrument(level = "debug", skip_all)]
 pub async fn load_module(
     engine: &wasmer::Engine,
     module_cache: &(dyn ModuleCache + Send + Sync),

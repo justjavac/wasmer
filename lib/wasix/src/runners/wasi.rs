@@ -143,6 +143,7 @@ impl WasiRunner {
         self.wasi.capabilities = capabilities;
     }
 
+    #[tracing::instrument(level = "debug", skip_all)]
     pub(crate) fn prepare_webc_env(
         &self,
         program_name: &str,
@@ -188,9 +189,10 @@ impl crate::runners::Runner for WasiRunner {
         let module = runtime.load_module_sync(cmd.atom())?;
         let store = runtime.new_store();
 
-        self.prepare_webc_env(command_name, &wasi, pkg, runtime, None)
-            .context("Unable to prepare the WASI environment")?
-            .run_with_store_async(module, store)?;
+        let builder = self
+            .prepare_webc_env(command_name, &wasi, pkg, runtime, None)
+            .context("Unable to prepare the WASI environment")?;
+        builder.run_with_store_async(module, store)?;
 
         Ok(())
     }
