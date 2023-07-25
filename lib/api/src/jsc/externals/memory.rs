@@ -7,7 +7,7 @@ use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::mem::{self, MaybeUninit};
 use std::slice;
-#[cfg(feature = "tracing")]
+
 use tracing::warn;
 
 use wasmer_types::{Pages, WASM_PAGE_SIZE};
@@ -215,7 +215,6 @@ impl<'a> MemoryBuffer<'a> {
             .checked_add(buf.len() as u64)
             .ok_or(MemoryAccessError::Overflow)?;
         if end > self.len.try_into().unwrap() {
-            #[cfg(feature = "tracing")]
             warn!(
                 "attempted to read ({} bytes) beyond the bounds of the memory view ({} > {})",
                 buf.len(),
@@ -239,7 +238,6 @@ impl<'a> MemoryBuffer<'a> {
             .checked_add(buf.len() as u64)
             .ok_or(MemoryAccessError::Overflow)?;
         if end > self.len.try_into().unwrap() {
-            #[cfg(feature = "tracing")]
             warn!(
                 "attempted to read ({} bytes) beyond the bounds of the memory view ({} > {})",
                 buf.len(),
@@ -261,7 +259,6 @@ impl<'a> MemoryBuffer<'a> {
             .checked_add(data.len() as u64)
             .ok_or(MemoryAccessError::Overflow)?;
         if end > self.len.try_into().unwrap() {
-            #[cfg(feature = "tracing")]
             warn!(
                 "attempted to write ({} bytes) beyond the bounds of the memory view ({} > {})",
                 data.len(),

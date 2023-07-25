@@ -5,7 +5,7 @@ use crate::MemoryType;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::slice;
-#[cfg(feature = "tracing")]
+
 use tracing::warn;
 
 use wasm_bindgen::prelude::*;
@@ -178,7 +178,6 @@ impl<'a> MemoryBuffer<'a> {
             .ok_or(MemoryAccessError::Overflow)?;
         let view = unsafe { &*(self.base) };
         if end > view.length().into() {
-            #[cfg(feature = "tracing")]
             warn!(
                 "attempted to read ({} bytes) beyond the bounds of the memory view ({} > {})",
                 buf.len(),
@@ -202,7 +201,6 @@ impl<'a> MemoryBuffer<'a> {
             .ok_or(MemoryAccessError::Overflow)?;
         let view = unsafe { &*(self.base) };
         if end > view.length().into() {
-            #[cfg(feature = "tracing")]
             warn!(
                 "attempted to read ({} bytes) beyond the bounds of the memory view ({} > {})",
                 buf.len(),
@@ -224,7 +222,6 @@ impl<'a> MemoryBuffer<'a> {
             .ok_or(MemoryAccessError::Overflow)?;
         let view = unsafe { &mut *(self.base) };
         if end > view.length().into() {
-            #[cfg(feature = "tracing")]
             warn!(
                 "attempted to write ({} bytes) beyond the bounds of the memory view ({} > {})",
                 data.len(),
