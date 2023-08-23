@@ -2426,6 +2426,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "target-lexicon",
  "thiserror",
+ "tracing",
  "wasm-bindgen",
  "wasm-bindgen-downcast",
  "wasmer-compiler",
