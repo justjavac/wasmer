@@ -15,9 +15,9 @@ use cranelift_codegen::entity::EntityRef;
 use cranelift_codegen::ir::{self, Block, InstBuilder, ValueLabel};
 use cranelift_codegen::timing;
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
-use wasmer_compiler::wasmparser;
+use wasmer_compiler::wasmparser::{self, RefType};
 use wasmer_compiler::{wptype_to_type, FunctionBinaryReader, ModuleTranslationState};
-use wasmer_types::{LocalFunctionIndex, WasmResult};
+use wasmer_types::{LocalFunctionIndex, WasmError, WasmResult};
 
 /// WebAssembly to Cranelift IR function translator.
 ///
@@ -194,8 +194,16 @@ fn declare_locals<FE: FuncEnvironment + ?Sized>(
             let constant_handle = builder.func.dfg.constants.insert([0; 16].to_vec().into());
             builder.ins().vconst(ir::types::I8X16, constant_handle)
         }
-        ExternRef => builder.ins().null(environ.reference_type()),
-        FuncRef => builder.ins().null(environ.reference_type()),
+        Ref(rt) => match rt {
+            RefType::FUNC => builder.ins().null(environ.reference_type()),
+            RefType::EXTERN => builder.ins().null(environ.reference_type()),
+            other => {
+                return Err(WasmError::Unsupported(format!(
+                    "Unsupported reference type: {:?}",
+                    other
+                )))
+            }
+        },
     };
 
     let wasmer_ty = wptype_to_type(wasm_type).unwrap();

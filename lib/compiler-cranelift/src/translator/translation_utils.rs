@@ -8,6 +8,7 @@ use cranelift_codegen::ir::{self, AbiParam};
 use cranelift_codegen::isa::TargetFrontendConfig;
 use cranelift_frontend::FunctionBuilder;
 use wasmer_compiler::wasmparser;
+use wasmer_compiler::wasmparser::RefType;
 use wasmer_types::{FunctionType, LibCall, RelocationKind, Type, WasmError, WasmResult};
 
 /// Helper function translate a Function signature into Cranelift Ir
@@ -90,13 +91,13 @@ pub fn irreloc_to_relocationkind(reloc: Reloc) -> RelocationKind {
 }
 
 /// Create a `Block` with the given Wasm parameters.
-pub fn block_with_params<PE: TargetEnvironment + ?Sized>(
+pub fn block_with_params<'a, PE: TargetEnvironment + ?Sized>(
     builder: &mut FunctionBuilder,
-    params: &[wasmparser::ValType],
+    params: impl Iterator<Item = &'a wasmparser::ValType>,
     environ: &PE,
 ) -> WasmResult<ir::Block> {
     let block = builder.create_block();
-    for ty in params.iter() {
+    for ty in params {
         match ty {
             wasmparser::ValType::I32 => {
                 builder.append_block_param(block, ir::types::I32);
@@ -110,9 +111,17 @@ pub fn block_with_params<PE: TargetEnvironment + ?Sized>(
             wasmparser::ValType::F64 => {
                 builder.append_block_param(block, ir::types::F64);
             }
-            wasmparser::ValType::ExternRef | wasmparser::ValType::FuncRef => {
-                builder.append_block_param(block, environ.reference_type());
-            }
+            wasmparser::ValType::Ref(rt) => match *rt {
+                RefType::FUNC | RefType::EXTERN => {
+                    builder.append_block_param(block, environ.reference_type());
+                }
+                other => {
+                    return Err(WasmError::Unsupported(format!(
+                        "Unsupported reference type: {:?}",
+                        other
+                    )))
+                }
+            },
             wasmparser::ValType::V128 => {
                 builder.append_block_param(block, ir::types::I8X16);
             }

@@ -11,7 +11,9 @@ use gimli::write::Address;
 use smallvec::{smallvec, SmallVec};
 use std::cmp;
 use std::iter;
-use wasmer_compiler::wasmparser::{BlockType as WpTypeOrFuncType, Operator, ValType as WpType};
+use wasmer_compiler::wasmparser::{
+    BlockType as WpTypeOrFuncType, Operator, RefType, ValType as WpType,
+};
 use wasmer_compiler::FunctionBodyData;
 #[cfg(feature = "unwind")]
 use wasmer_types::CompiledFunctionUnwindInfo;
@@ -235,8 +237,8 @@ fn type_to_wp_type(ty: Type) -> WpType {
         Type::F32 => WpType::F32,
         Type::F64 => WpType::F64,
         Type::V128 => WpType::V128,
-        Type::ExternRef => WpType::ExternRef,
-        Type::FuncRef => WpType::FuncRef, // TODO: FuncRef or Func?
+        Type::ExternRef => WpType::Ref(RefType::EXTERN),
+        Type::FuncRef => WpType::Ref(RefType::FUNC),
     }
 }
 
@@ -270,7 +272,15 @@ impl<'a, M: Machine> FuncGen<'a, M> {
             let loc = match *ty {
                 WpType::F32 | WpType::F64 => self.machine.pick_simd().map(Location::SIMD),
                 WpType::I32 | WpType::I64 => self.machine.pick_gpr().map(Location::GPR),
-                WpType::FuncRef | WpType::ExternRef => self.machine.pick_gpr().map(Location::GPR),
+                WpType::Ref(rt) => {
+                    if rt == RefType::EXTERN || rt == RefType::FUNC {
+                        self.machine.pick_gpr().map(Location::GPR)
+                    } else {
+                        return Err(CompileError::UnsupportedFeature(format!(
+                            "Unsupported reference type {rt:?}"
+                        )));
+                    }
+                }
                 _ => codegen_error!("can't acquire location for type {:?}", ty),
             };
 
@@ -6067,7 +6077,7 @@ impl<'a, M: Machine> FuncGen<'a, M> {
 
                 let ret = self.acquire_locations(
                     &[(
-                        WpType::FuncRef,
+                        WpType::Ref(RefType::FUNC),
                         MachineValue::WasmStack(self.value_stack.len()),
                     )],
                     false,
@@ -6163,7 +6173,7 @@ impl<'a, M: Machine> FuncGen<'a, M> {
 
                 let ret = self.acquire_locations(
                     &[(
-                        WpType::FuncRef,
+                        WpType::Ref(RefType::FUNC),
                         MachineValue::WasmStack(self.value_stack.len()),
                     )],
                     false,
