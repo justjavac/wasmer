@@ -9,6 +9,10 @@ pub mod wcgi;
 
 pub use self::{runner::Runner, wasi_common::MappedCommand};
 
+use std::sync::Arc;
+
+use virtual_fs::FileSystem;
+
 /// A directory that should be mapped from the host filesystem into a WASI
 /// instance (the "guest").
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -18,4 +22,20 @@ pub struct MappedDirectory {
     /// The absolute path specifying where the host directory should be mounted
     /// inside the guest.
     pub guest: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct MountedDirectory {
+    pub guest: String,
+    pub fs: Arc<dyn FileSystem + Send + Sync>,
+}
+
+impl From<MappedDirectory> for MountedDirectory {
+    fn from(value: MappedDirectory) -> Self {
+        let MappedDirectory { host: _, guest } = value;
+        // TODO: Mount just the directory
+        let fs = Arc::new(crate::default_fs_backing());
+
+        MountedDirectory { guest, fs }
+    }
 }
