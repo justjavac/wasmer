@@ -149,10 +149,6 @@ fn build_directory_mappings(
             root_fs
                 .mount(guest_path.clone(), fs, "/".into())
                 .with_context(|| format!("Unable to mount \"{}\"", guest_path.display()))?;
-
-            builder
-                .add_preopen_dir(&guest_path)
-                .with_context(|| format!("Unable to preopen \"{}\"", guest_path.display()))?;
         }
     }
 
